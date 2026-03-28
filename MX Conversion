@@ -1,0 +1,832 @@
+---
+title: "Mx Conversion Improvement - Modeling"
+author: "Whitney Bullock" 
+date: "03/19/2026"
+output: 
+  html_document:
+    code_folding: "none"
+    toc: true
+    toc_depth: 4
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,      
+  warning = FALSE,   
+  message = FALSE,   
+  error = FALSE,     
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+## Executive Summary 
+
+This analysis identifies the key drivers of lead conversion for the Mx product and defines a clear, data-backed Ideal Customer Profile (ICP) to improve targeting and performance. Through exploratory analysis and predictive modeling, we found that conversion is most strongly influenced by industry, company size, territory, and contact lead title.  
+
+The highest-performing segments are small and medium-sized companies in the Blood & Biologics and Medical Device industries, particularly within the Americas, EMEA, and Japan. These segments demonstrate significantly higher conversion rates due to the regulatory complexity of their environments, which increases the need for Mx solutions. Within these accounts, Management and Engineering roles consistently show the strongest likelihood of conversion, indicating they are the primary decision-makers and should be the focus of sales engagement.
+
+Predictive modeling supports these findings. A logistic regression model achieved an AUC of 0.823 and 84% accuracy, demonstrating strong predictive power and clear interpretability. Key positive drivers of conversion include high-intent actions such as “Contact Us,” “Live Demo,” and “Website Pricing” interactions, while lower engagement channels such as email, events, and external demand generation were associated with reduced conversion likelihood. The Random Forest model confirmed these patterns while highlighting additional non-linear relationships between variables, though with slightly lower predictive performance.
+
+Based on these insights, we identified a refined ICP that achieves a conversion rate of 19%, compared to the current overall average of 12.7%, representing a substantial improvement in targeting efficiency. This level of performance aligns closely with the established Qx product line, reinforcing the strength and validity of this approach.
+
+In conclusion, focusing sales and marketing efforts on regulated industries, prioritizing small to medium-sized accounts, targeting decision-makers in management and engineering roles, and emphasizing high-intent engagement channels will significantly increase Mx conversion performance and overall pipeline efficiency.
+
+
+## Introduction 
+
+MasterControl is a leading provider of quality and manufacturing management software for life sciences organizations, including pharmaceutical, biotechnology, and medical device manufacturers. Its established Quality Solutions (Qx) product line achieves a strong conversion rate of 19.7%, the newer Manufacturing Solutions (Mx) line is converting at only 12.7%. This performance gap represents both a revenue opportunity and a strategic concern as the company seeks to expand Mx adoption across existing and new markets.
+
+Qx benefits from stronger brand recognition and market maturity; Mx is still in a growth phase. As a result, MasterControl lacks clear visibility into which customer segments are most likely to convert for this product. 
+
+This project applies exploratory data analysis to identify the characteristics most strongly associated with Mx conversion. Specifically, we will evaluate how industry, manufacturing model, company tier, geography, and job role influence progression to high-value sales stages (SQL, SQO, or WON). The ultimate goal is to develop actionable insights and a ranked lead-scoring framework that enables MasterControl to prioritize high-potential prospects, define MasterControls ideal customer profile for the MX solution, and improve overall Mx conversion performance.
+
+#### Packages and Libraries 
+
+```{r Loading packages and libraries }
+#loading packages and libraries 
+
+packages <- c("tidyverse", "skimr", "DataExplorer", "corrplot", "naniar","caret", "tidymodels","xgboost","randomForest")
+install.packages(setdiff(packages, rownames(installed.packages())))
+
+
+library(tidyverse)
+library(skimr)
+library(DataExplorer)
+library(corrplot)
+library(naniar)
+library(DataExplorer)
+library(ggplot2)
+library(caret)
+library(tidymodels)
+library(xgboost)
+library(randomForest)
+```
+
+#### Reading in data 
+
+```{r Reading in Data}
+Data <- read.csv("Mastercontrol QAL Performance.csv")
+
+```
+
+## Exploratory Data Analysis 
+
+The initial exploratory analysis will use functions like str(), glimpse(), and skim() to evaluate general structure of the dataset.  These functions assist to showcase variable types, completeness, and overall data quality.   Early inspection of the data helps to guide subsequent feature engineering and data preparation steps necessary for modeling.  
+
+
+Key dataset details include:
+
+16,644 observations
+
+14 original features
+
+All variables initially read as character types
+
+High cardinality variables include: contact.lead.title with 6589 unique values 
+
+Identifiers: QAL.ID and contact.lead.id
+
+
+```{r Summary analyses}
+str(Data)
+glimpse(Data)
+skim(Data)
+```
+
+
+All variables appear to have complete and accurate data.  Contact lead title reports 4860 empty values, because this variable is valuable for future modeling we will implement fixes to improve the data for modeling.  A suggestion for future forms would be to have contact lead title be a drop down list to ensure unformity of this variable. Having a selected option, rather than open text might also improve the completeness of the variable.  Identifying and correcting variables with high levels of missing data is essential to minimizing model bias and ensuring analytical accuracy.  
+
+
+### Data Clean-up for Missingness 
+
+```{r Data Clean up }
+
+#cleaning up variables where the blank is identified as unknown 
+
+library(dplyr)
+library(stringr)
+
+Data_clean <- Data %>%
+  mutate(across(where(is.character), ~ na_if(str_trim(.), "")))
+
+library(naniar)
+
+miss_var_summary(Data_clean)
+
+Data_clean <- Data_clean %>%
+  mutate(
+    acct.target.industry  = replace_na(acct.target.industry, "Unknown"),
+    acct.territory.rollup = replace_na(acct.territory.rollup, "Unknown"),
+    acct.tier.rollup      = replace_na(acct.tier.rollup, "Unknown"),
+    contact.lead.title    = replace_na(contact.lead.title, "Unknown"),
+    acct.manufacturing.model = replace_na(acct.manufacturing.model, "Unknown"),
+    acct.primary.site.function = replace_na(acct.primary.site.function, "Unknown")
+  )
+```
+
+
+```{r Data Clean up 2 }
+
+#Identifying result as other if less than 50 unique variables 
+
+library(forcats)
+
+Data_model <- Data_clean %>%
+  mutate(
+    acct.target.industry  = fct_lump_min(as.factor(acct.target.industry), min = 50),
+    acct.territory.rollup = fct_lump_min(as.factor(acct.territory.rollup), min = 50),
+    acct.manufacturing.model = fct_lump_min(as.factor(acct.manufacturing.model), min = 50),
+    acct.primary.site.function = fct_lump_min(as.factor(acct.primary.site.function), min = 50)
+  )
+```
+
+```{r}
+colSums(is.na(Data_model))
+```
+
+
+
+### Establishing Target Variable 
+
+
+To support predictive modeling, a target variable was created to represent high-value funnel progression. Leads that advanced to SQL, SQO, or WON are classified as successful outcomes.
+
+Defining this target enables exploratory analysis to focus on how individual features differ between successful and unsuccessful leads, helping uncover meaningful correlations and patterns that inform feature selection and model design.
+
+The unit of analysis for this project is an individual QAL lead. The target variable is binary, indicating whether a lead progressed to a high-value funnel stage (SQL, SQO, or WON).
+
+
+```{r Target Variable}
+#creating a target variable to use for future modeling. Target shows positive movement through the sales funnel.  
+
+Data2 <- Data_model %>%
+  mutate(
+    Target = if_else(
+      next_stage__c %in% c("SQL", "SQO", "WON"),
+      1, 0
+    )
+  )
+
+Data2 %>%
+  count(Target) %>%
+  mutate(pct = round(n / sum(n), 2))
+
+```
+
+Target balance 
+
+```{r Target Balance}
+
+#simple chart to check for target balance 
+
+ggplot(Data2, aes(x = factor(Target), fill = factor(Target))) +
+  geom_bar() +
+  scale_fill_manual(values = c("0" = "lightgray", "1" = "steelblue")) +
+  labs(title = "Distribution of Target Variable (Conversion)", 
+       x = "Converted (0 = No, 1 = Yes)", y = "Count") +
+  theme_minimal()
+```
+
+
+### Feature Engineering and Categorical Summaries 
+
+Grouping job titles streamlines analysis, enhances visualization clarity, and enables models to learn from meaningful categories rather than 1,000+ unique values. Because title is a key component of our analysis, it is essential to structure this variable in a way that maximizes its analytical usefulness and predictive value.  
+
+It is important to note that first match will win.  I.e. because Manager is listed above engineering in the code if some one were to enter "Engineering Manager"  it will be categorized as Manager.  
+
+```{r Contact Lead Title }
+
+#feature engineering to make meaningful subgroups for contact lead title that was an open text field and resulted in 6589 different title results.  This buckets the 6589 into 6.   
+
+Data3 <- Data2 %>% mutate(contact.lead.title = case_when( grepl("Manager|Director|Head|Executive|President", contact.lead.title, ignore.case = TRUE) ~ "Management", grepl("Engineer|Developer|Programmer|Scientist|Chemist|Inspector|Technologist|Quality", contact.lead.title, ignore.case = TRUE) ~ "Engineering", grepl("Sales|Account|Business", contact.lead.title, ignore.case = TRUE) ~ "Sales", grepl("Analyst|Consultant", contact.lead.title, ignore.case = TRUE) ~ "Analytics", grepl("Marketing|Communications", contact.lead.title, ignore.case = TRUE) ~ "Marketing", TRUE ~ "Other" ))
+```
+
+
+This loop is designed to summarize all categorical variables in relation to the target variable. It helps us understand how each category is distributed within the target, revealing which categories have higher or lower conversion rates. Additionally, this loop aids in feature engineering (e.g., grouping titles) and informs modeling decisions by highlighting variables with strong predictive power.
+
+
+```{r Loop for conversions }
+
+#factoring variables 
+cat_vars <- names(Data3)[sapply(Data3, function(x) is.character(x) | is.factor(x))]
+
+#removing unwanted variables 
+cat_vars <- setdiff(cat_vars, 
+                    c("QAL.ID", 
+                      "qal.cohort.date", 
+                      "contact.lead.id",
+                      "next_stage__c"))
+
+
+#loop for each variable to group by variable and report on conversion rate 
+for (var in cat_vars) {
+  
+  cat("====", var, "====\n")
+  
+  summary_table <- Data3 %>%
+    group_by(.data[[var]]) %>%
+    summarise(
+      Count = n(),
+      ConversionRate = round(mean(Target), 3),
+      .groups = "drop"
+    ) %>%
+    arrange(desc(ConversionRate))
+  
+  print(head(summary_table, 8))
+  cat("\n\n")
+}
+```
+
+
+Several patterns emerge from the categorical summaries:
+
+**Industry**: Blood & Biologics and Medical Device segments show higher conversion rates relative to Non-Life Science. This will be something to explore later.  
+
+**Title**: Management and Engineering roles demonstrate stronger conversion performance than Marketing or Other. From experience this makes sense because management and engineering roles are the decision makers in most companies.  They identify the need and find the solution.  They will be the ones to identify if Master Control products will suffice the needs of their company.  
+
+**Territory**: Leads in the Americas demonstrate higher conversion rates compared to APAC & Oceania and EMEA. This aligns with expectations, as MasterControl’s quality management solutions are particularly relevant in highly regulated markets, many of which are concentrated in the Americas. However, this finding warrants further investigation. During preliminary data review, we identified potential character encoding issues affecting non-English entries. It is possible that data quality inconsistencies may have contributed to lower observed performance in APAC, and this should be validated before drawing firm conclusions.
+
+**Company Tier**: Smaller and medium accounts convert at higher rates than large enterprises. We believe this is because large enterprises handle their QMS and manufacturing ERP systems internally with dedicated resources. Smaller accounts likely have higher conversions because they need the support of trained professional and a plug and play system.  
+
+**Campaign Channel**: Direct/Inbound and SEO generate substantially higher conversion rates than outbound prospecting. This is most generally the case for any conversion.  Someone actively seeking a tool to assist them is going to have a higher conversion than outbound prospecting.  
+
+**Solution Rollup**: Summaries confirm what was provided in Master Controls data write up already stating that Qx (19.5%) significantly outperforms Mx (12.2%), confirming the original business problem. This is the problem we will be addressing through our modeling to improve Mx conversion rates.  
+
+
+### Vizualizations and Tables to Explore 
+
+Our goal is to increase conversion so while raw counts is good to become familiar with the data we should start to focus on conversions.  This simple chart helps us to explore conversions based on identified target industry.  
+
+
+```{r Conversion by industry}
+
+#charting Qx and Mx conversion rate by industry 
+
+Data3 %>%
+  filter(solution_rollup != "Ax") %>%  
+  group_by(acct.target.industry, solution_rollup) %>%
+  summarise(
+    ConversionRate = round(mean(Target), 2),
+    Count = n(),
+    .groups = "drop"  
+  ) %>%
+  arrange(acct.target.industry, desc(ConversionRate))
+```
+```{r Conversion by contact lead }
+#chart to show Qx and Mx conversion rates by contact lead 
+
+Data3 %>%
+  filter(solution_rollup != "Ax") %>%  
+  group_by(contact.lead.title, solution_rollup) %>%
+  summarise(
+    ConversionRate = round(mean(Target), 2),
+    Count = n(),
+    .groups = "drop"  
+  ) %>%
+  arrange(contact.lead.title, desc(ConversionRate))
+```
+
+Conversion rates for both Qx and Mx are notably higher within the Blood & Biologics and Medical Device industries relative to other segments. This reinforces earlier findings that more heavily regulated sectors demonstrate stronger engagement and progression through the sales funnel. Organizations in these industries often operate under strict compliance and documentation requirements, increasing the likelihood that structured quality and manufacturing solutions address a clear operational need.
+
+Across every industry segment, Qx consistently outperforms Mx in conversion rate. This persistent gap confirms the original business problem: Mx is underperforming relative to the more established Qx product line, even within high-performing industries. The difference may reflect stronger market awareness, product maturity, or clearer value communication for Qx.
+
+
+## MX Focus 
+
+
+```{r Creating MX Data}
+Mx_data <- Data3 %>%
+  filter(solution_rollup == "Mx")
+
+```
+
+### Mx by Variable Conversions 
+
+```{r Conversion loop for MX only }
+
+#factoring variables
+
+cat_vars <- names(Mx_data)[sapply(Mx_data, function(x) is.character(x) | is.factor(x))]
+
+#removing unwanted variables from the data 
+
+cat_vars <- setdiff(cat_vars, 
+                    c("QAL.ID", 
+                      "qal.cohort.date", 
+                      "contact.lead.id",
+                      "next_stage__c"))
+
+#beginning of loop for each variable in Mx data to be grouped by their variable and report conversation rate for each 
+
+for (var in cat_vars) {
+  
+  cat("====", var, "====\n")
+  
+  summary_table <- Mx_data %>%
+    group_by(.data[[var]]) %>%
+    summarise(
+      Count = n(),
+      ConversionRate = round(mean(Target), 3),
+      .groups = "drop"
+    ) %>%
+    arrange(desc(ConversionRate))
+
+  print(head(summary_table, 8))
+  cat("\n\n")
+}
+```
+
+
+### MX by Target Industry 
+
+Q: What Industry has the highest conversion rate currently for the MX solution line? 
+
+
+```{r MX conversion by industry}
+
+# MX data showcasing target conversion by industry 
+
+Mx_data %>%
+  group_by(acct.target.industry) %>%
+  summarise(
+    ConversionRate = mean(Target),
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(ConversionRate)) %>%
+  ggplot(aes(x = reorder(acct.target.industry, ConversionRate),
+             y = ConversionRate,
+             fill = ConversionRate)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Mx Conversion Rate by Industry",
+       x = "Target Industry",
+       y = "Conversion Rate") +
+  scale_fill_gradient(low = "lightblue", high = "steelblue") +
+  theme_minimal() +
+  
+  geom_text(aes(label = Count), hjust = -0.2, color = "black", size = 4)
+
+```
+
+Blood & Biologics, as well as Medical Device segments demonstrate some of the highest conversion rates for Mx. This pattern is likely driven by the highly regulated nature of these industries. Organizations operating in regulated environments must comply with strict documentation, traceability, and manufacturing control standards, increasing the need for structured manufacturing execution and quality systems.
+
+A second notable finding from the analysis is the significant size of the Pharma & BioTech and Non-Life Science industries in the dataset, which seem to be significantly influencing or diluting the overall conversion rate for the Mx product line. These two sectors represent a large proportion of the leads in the dataset, yet their conversion rates are relatively low compared specialized industries like Blood & Biologics and Medical Device.
+
+
+### MX by Manufacturing Models 
+
+Q: Which manufacturing models have higher conversion rates for the MX solution? 
+
+```{r Conversion by MX Mfg. Solution}
+
+#establishing target variable 
+Data5 <- Data %>%
+  mutate(
+    Target = if_else(
+      next_stage__c %in% c("SQL", "SQO", "WON"),
+      1, 0
+    )
+  )
+
+#selecting only Mx solution and charting manufacturing model by conversion rates 
+
+Data5 %>%
+   filter(solution_rollup == "Mx") %>% 
+  group_by(acct.manufacturing.model) %>%
+  summarise(
+    ConversionRate = mean(Target),
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(ConversionRate)) %>%
+  ggplot(aes(x = reorder(acct.manufacturing.model, ConversionRate),
+             y = ConversionRate,
+             fill = ConversionRate)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Mx Conversion Rate by Manufacturing Model",
+       x = "Target Industry",
+       y = "Conversion Rate") +
+  scale_fill_gradient(low = "lightgray", high = "darkblue") +
+  theme_minimal() +
+  
+  geom_text(aes(label = Count), hjust = -0.2, color = "black", size = 4)
+
+
+
+```
+
+This chart shows that Original Equipment Manufacturing (OEM) and CMO companies lead the way with high conversion rates and volume.  Suggesting that businesses directly involved in production have a greater need for structured manufacturing solutions that Mx can offer.
+
+
+### MX by Job Role 
+
+Q: Which job roles are most likely to be decision-makers that Mx should engage with regarding their Mx solution line?
+
+```{r Conversion by MX Contact Lead }
+
+#visual chart to show conversion by contact lead title 
+Mx_data %>%
+  group_by(contact.lead.title) %>%
+  summarise(
+    ConversionRate = mean(Target),
+    Count = n(),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = reorder(contact.lead.title, ConversionRate),
+             y = ConversionRate,
+             fill = ConversionRate)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Mx Conversion Rate by Job Role",
+       x = "Job Role",
+       y = "Conversion Rate") +
+  scale_fill_gradient(low = "lightgray", high = "darkgreen") +
+  theme_minimal()
+
+```
+
+This chart highlights the distribution of conversion rates by job role, providing insight into which functional groups are most influential in driving Mx progression through the sales funnel. Management and Engineering roles demonstrate notably higher conversion rates compared to Marketing or Other categories, suggesting that decision-making authority and operational ownership play a significant role in successful outcomes.
+
+### MX by Industry X Territory 
+
+Q: Does industry and geography location have correlations to conversion rates for MX solution line? 
+
+```{r Conversion MX territory x industry}
+#visual chart to showcase interaction between industry and territory 
+
+Mx_data %>%
+  group_by(acct.target.industry, acct.territory.rollup) %>%
+  summarise(
+    ConversionRate = mean(Target),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = acct.territory.rollup,
+             y = acct.target.industry,
+             fill = ConversionRate)) +
+  geom_tile() +
+  labs(title = "Mx Conversion Heatmap: Industry by Territory",
+       x = "Territory",
+       y = "Industry") +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  theme_minimal()
+```
+
+This heat map provides a clear visualization of how Mx conversion rates vary across both industry and geographic territory. By examining these dimensions simultaneously, we are able to identify concentrated pockets of high performance rather than evaluating each variable in isolation.
+
+Several industry–region combinations demonstrate meaningfully higher conversion rates, suggesting that Mx adoption is not uniformly distributed across markets. Instead, performance appears to depend on the intersection of regulatory intensity, operational maturity, and regional market dynamics. I.e. heavily regulated industries within the Americas show particularly strong performance, reinforcing earlier findings that regulatory complexity may increase the need for structured manufacturing solutions.
+
+## EDA Takeaways 
+
+### Visualization Summaries 
+
+When isolating Mx leads, conversion disparities become more pronounced across industry and role segments. Blood & Biologics and Medical Device industries continue to outperform others, suggesting potential ICP refinement opportunities. Additionally, Management and Engineering roles maintain higher conversion rates, reinforcing their influence in manufacturing software purchasing decisions. Manufacturing models also play a key role, with organizations directly involved in production showing significantly higher conversion rates. Geographic variation indicates that industry performance is not uniform across territories, suggesting interaction effects may be important in predictive modeling.
+
+### EDA Key Findings 
+
+Mx conversion (12.2%) significantly under performs Qx (19.5%).
+
+Regulated industries (Blood & Biologics, Medical Device) show strongest Mx conversion.
+
+Management and Engineering roles convert highest.
+
+Small and medium firms outperform large enterprises.
+
+Direct/Inbound and SEO channels yield highest progression.
+
+Industry × Territory interaction likely important for modeling.
+
+## Modeling 
+
+### Implications for Modeling 
+
+The exploratory analysis has identified several high-impact variables that will serve as the foundation for the Mx lead scoring modeling.  The following factors will be central to the feature selection process.  
+
+1. Prioritizing Industry Segementation 
+
+The performance of Blood & Biologics and Medical Device industries confirms that regulatory requirements are a primary driver for Mx adoption.  These should be weighted features 
+
+2. Weighted Scoring for Key Influencers 
+
+The high conversion rates for Management and Engineering roles indicate these are decision makers with influence on purchasing decisions.  Leads with these titles should receive a higher baseline probability in the predictive modeling, helping the sales team to identify the correct entry point within a potential client company.   
+
+3. Capture Multi-Dimensional Interactions 
+
+Our EDA suggests that Industry and Territory interactions also have influence on the conversion rate.  Through logistic regression or tree based models we can explore these interactions to capture non-linear relationships.  
+
+### Modeling Plan 
+
+Our baseline model will start with a logistics regression analysis.  This model is highly interpretable and can directly output a conversion probability between 0 and 1.  With this model we will be able to examine lift from various variable factors, confirming our assumptions with industry and title.  
+
+The second model of choice will be a random forest model because of its ability to handle non-linear relationships.  It can help capture complex patterns in the data to help uncover hidden insights.  
+
+
+Because we have a binary target we are looking to maximize recall for high-quality leads, maintain reasonable precision, produce lift charts so that Master Control sales team can have success in MX conversions.  
+
+### Feature engineering Primary Site Function 
+
+```{r Feature engineer primary site function }
+
+#Feature engineer the primary site function to limit it into understandable categories  
+
+Data_clean_Mx_modeling <- Mx_data %>%
+ mutate(site_group = case_when(
+  str_detect(acct.primary.site.function,"injectable|API|biologic|OSD") ~ "Pharma Manufacturing",
+  str_detect(acct.primary.site.function,"device|IVD|surgical") ~ "Device Manufacturing",
+  str_detect(acct.primary.site.function,"Non-manufacturing") ~ "Non-Manufacturing",
+  TRUE ~ "Other Manufacturing"
+ ))
+
+```
+
+We created the site_group variable to combine detailed site function descriptions into broader, more meaningful manufacturing categories. This reduces complexity in the data and ensures similar site functions are analyzed together. Grouping these values also makes the dataset easier to use for modeling and improves interpretability of the results.
+
+
+### Log Model 
+
+```{r Log Model Data 3 }
+
+#model preparation 
+set.seed(123)
+
+train_index <- createDataPartition(Data3$Target, p = .7, list = FALSE)
+train_data <- Data3[train_index, ]
+test_data  <- Data3[-train_index, ]
+
+#log model with weights to try and improve model with target imbalance. 
+
+log_model <- glm(Target ~ acct.target.industry +
+                   acct.territory.rollup +
+                   acct.tier.rollup +
+                   contact.lead.title +
+                   last.tactic.campaign.channel +
+                   acct.manufacturing.model + 
+                   Priority,
+                 data = train_data,
+                 family = "binomial",
+                 weights = ifelse(train_data$Target == 1,3,1))
+
+# keeps log model output clean 
+tidy(log_model) %>%
+  filter(p.value < 0.05) %>%
+  mutate(odds_ratio = exp(estimate)) %>%
+  arrange(desc(abs(estimate)))
+
+# this would show the complete output for the log model 
+#summary(log_model)
+
+```
+
+```{r log model data 3 pred}
+
+#pulls in log model, provides a pred value if >.5 will identify it as converting.
+pred_probs <- predict(log_model, test_data, type = "response")
+
+pred_class <- ifelse(pred_probs > .5, 1, 0)
+
+#confusion matrix to get accuracy, sensitivity, etc for model analysis 
+confusionMatrix(as.factor(pred_class), as.factor(test_data$Target))
+```
+
+
+```{r AUC log model data 3}
+#produces area unter the curve graphic to score model performance
+
+install.packages("pROC")
+library(pROC)
+
+
+roc_obj <- roc(test_data$Target, pred_probs)
+
+
+auc_value <- auc(roc_obj)
+print(auc_value)
+
+plot(roc_obj, col = "#1c61b6", lwd = 3, main = "ROC Curve for Logistic Regression Model")
+abline(a = 0, b = 1, lty = 2, col = "gray")  # diagonal line for reference
+
+
+auc_value <- auc(roc_obj)
+legend("bottomright", legend = paste("AUC =", round(auc_value, 3)), col = "#1c61b6", lwd = 3)
+```
+
+### Log Model Summary 
+
+The logistic regression model was used as the baseline model to predict lead conversion because it is highly interpretable and produces probabilities between 0 and 1. The model showed solid performance with 79% accuracy and an AUC of 0.822, indicating good ability to distinguish between converting and non-converting leads. Results show that medium and small tier accounts, management-level contacts, and high-intent actions such as “Contact Us,” “Live Demo,” and “Website Pricing” significantly increase the likelihood of conversion. In contrast, leads from Non-Life Science industries and several marketing channels such as email, events, and external demand generation showed lower conversion likelihood. Overall, the logistic model helped identify which variables influence conversion, providing interpretable insights that will guide further analysis with Random Forest to capture complex patterns and rank feature importance.
+
+### Random Forest Model 
+
+We decided to implement a Random Forest Model to our analysis to try to discover non-linear relationships in the data.  We have chosen to build 500 trees to learn from and aggregate our predictions to try to improve prediction accuracy.  Does industry and location truly have impacts on each other for conversion? Lastly, we are trying to determine which features are most important to model on.  Is there one feature over another that will have a stronger influence on conversion?  
+
+
+```{r Random Forest data 3 }
+#data preparation 
+
+set.seed(123)
+
+train_index <- createDataPartition(Data3$Target, p = .7, list = FALSE)
+train_data <- Data3[train_index, ]
+test_data  <- Data3[-train_index, ]
+
+train_data$Target <- as.factor(train_data$Target)
+test_data$Target  <- as.factor(test_data$Target)
+
+#random forest model 
+rf_model <- randomForest(
+  Target ~ acct.target.industry +
+           acct.tier.rollup +
+           acct.territory.rollup +
+           contact.lead.title +
+           last.tactic.campaign.channel +
+           Priority,
+  data = train_data,
+  ntree = 500,
+  importance = TRUE
+)
+```
+
+
+```{r Random Forest pred and AUC}
+
+#generating predictions to test model performance 
+print(rf_model)
+
+rf_pred_class <- predict(rf_model, test_data)
+
+
+rf_pred_prob <- predict(rf_model, test_data, type = "prob")[,2]
+
+
+#confusion matrix to test sensitivity, accuracy, etc.  
+confusionMatrix(rf_pred_class, test_data$Target)
+
+#area under the curve graphic to score model performance 
+roc_rf <- roc(as.numeric(test_data$Target), rf_pred_prob)
+auc_rf <- auc(roc_rf)
+print(auc_rf)
+
+plot(roc_rf,
+     col = "darkgreen",
+     lwd = 3,
+     main = "ROC Curve for Random Forest Model")
+abline(a = 0, b = 1, lty = 2, col = "gray")
+
+legend("bottomright",
+       legend = paste("AUC =", round(auc_rf,3)),
+       col = "darkgreen",
+       lwd = 3)
+
+# Feature Importance
+varImpPlot(rf_model)
+```
+
+
+### Random Forest Summary 
+
+A Random Forest classification model was built using 500 trees and included predictors: industry, account tier, territory, lead title, campaign channel, and priority. The model achieved an accuracy of 83.1% with an AUC of 0.778, indicating good but slightly lower predictive performance than our logistic regression model. Again, the results showed the model to be effective at identifying non-converting leads but still struggled with identifying converting leads due to class imbalance.  Feature importance analysis highlighted which variables contribute most to prediction, helping uncover nonlinear relationships and interaction effects in the data.
+
+
+## Ideal Customer Profile Conversion 
+
+```{r ICP conversion MX }
+
+#creating data set filtered on ideal customer profile identified 
+ICP_data <- Mx_data %>%
+  filter(
+    acct.target.industry %in% c("Blood & Biologics", "Medical Device"),
+    acct.tier.rollup %in% c("Small", "Medium"),
+    acct.territory.rollup %in% c("Americas", "EMEA", "Japan"),
+    contact.lead.title %in% c("Management", "Engineering")
+  )
+
+#reporting on conversion rates for ICP and Mx 
+round(mean(ICP_data$Target), 2)
+round(mean(Mx_data$Target), 2)
+```
+
+
+## Analysis Q and A 
+### Level 1 Account Analysis Questions 
+
+Q. Which types of accounts are best prospects for Mx? 
+
+  A. Industries in Medical Devices and Blood & Biologics are more likely to convert to Mx.  
+
+Q. Which manufacturing models are more likely to convert? 
+
+  A. Based on our analysis consumer packaged goods, original equipment manufacturing, and CMO showed good volume as well as higher conversion rates.  In-house manufacturing has really high volume but standard conversion rates to existing value of 12.7%.  
+  
+Q. What site functions are likely to convert? 
+
+  A. We did not explore this in enough detail. Feature engineering of site function will need to take place to showcase conversions in meaningful groups.   
+  
+### Level 2 Title Analysis 
+
+Q. Which job titles convert best with account types? 
+
+  A. We explored this at great length and repeatedly Management and Engineering prove to be the decision makes for our potential customers when exploring Master Control as a solution for their need.  These are the groups of people the Master Control Sales team should be engaging with.  
+  
+### Level 3 Cross-Sell Opportunties 
+Q. Which accounts and titles are good for BOTH Qx and Mx products? 
+
+  A. Based on our analysis for a great opportunity for cross selling would be a customer in the Blood & Biologics space as well as Medical Devices. Because of their heavy regulated nature both their quality management system as well as their manufacturing processes would benefit from the controlled, well documented solutions that Qx and Mx provide.  In these spaces it would be very benefical to the customer to have both required processes maintained in the same software that is able to speak to each other and draw results from.  
+  
+## Conclusion  
+
+Through our analysis re-occuring themes appeared and were supported by the modeling. MasterControl's ideal customer profile are small to medium size companies that are in the Blood & Biologics and Medical Devices industries. Strongest conversion results for Mx appeared in EMEA and America Blood & Biologics, as well Japan Medical Devices.   Key decision makers that MasterControl should get their sales team in front of are Management and Engineering from perspective customers.   
+
+We are confident that focusing on small and medium-sized blood and biologics companies in the Americas and EMEA, along with small and medium-sized medical device companies in Japan, will increase the MX conversion rate to 19%. This targeted mix of company size, industry, and region has demonstrated higher conversion performance compared to the current average of 12.7%.  This represents a 49% relative lift in conversion rate.  
+
+Reaching a 19% conversion rate for the Mx solution would align closely with the current performance of the Qx established product line, which has consistently delivered strong results over its 20+ year history.
+
+## Group Member Contribution 
+
+
+## Appendix 
+
+Acct manufacturing model conversion rate for Mx 
+
+Insight: Original Equipment Manufacturing and CMO account manufacturing models have good conversion rates as well as high volume.  
+
+```{r MX conversion manf. model}
+
+#filtering Mx data on manufacturing model with conversion rates 
+Data3 %>%
+  filter(solution_rollup == "Mx") %>%  
+  group_by(acct.manufacturing.model, solution_rollup) %>%
+  summarise(
+    ConversionRate = round(mean(Target), 2),
+    Count = n(),
+    .groups = "drop"  
+  ) %>%
+  arrange(acct.manufacturing.model, desc(ConversionRate))
+```
+
+### Log for MX only 
+```{r Log Model MX only }
+#model preparation 
+set.seed(123)
+
+train_indexMX <- createDataPartition(Data_clean_Mx_modeling$Target, p = .7, list = FALSE)
+train_dataMX <- Data_clean_Mx_modeling[train_indexMX, ]
+test_dataMX  <- Data_clean_Mx_modeling[-train_indexMX, ]
+
+#log model with weights to try and improve model with target imbalance. 
+
+log_modelMX <- glm(Target ~ acct.target.industry +
+                   acct.territory.rollup +
+                   acct.tier.rollup +
+                   contact.lead.title +
+                     last.tactic.campaign.channel + 
+                   acct.manufacturing.model + 
+                   Priority,
+                 data = train_dataMX,
+                 family = "binomial",
+                 weights = ifelse(train_dataMX$Target == 1,3,1))
+
+# keeps log model output clean 
+tidy(log_modelMX) %>%
+  filter(p.value < 0.05) %>%
+  mutate(odds_ratio = exp(estimate)) %>%
+  arrange(desc(abs(estimate)))
+print(log_modelMX)
+
+# this would show the complete output for the log model 
+#summary(log_model)
+```
+```{r Log pred MX only}
+#pulls in log model, provides a pred value if >.5 will identify it as converting.
+pred_probsMX <- predict(log_modelMX, test_dataMX, type = "response")
+
+pred_classMX <- ifelse(pred_probsMX > .5, 1, 0)
+
+#confusion matrix to get accuracy, sensitivity, etc for model analysis 
+confusionMatrix(as.factor(pred_classMX), as.factor(test_dataMX$Target))
+```
+
+```{r AUC log model MX only}
+#produces area unter the curve graphic to score model performance
+
+install.packages("pROC")
+library(pROC)
+
+
+roc_objMX <- roc(test_dataMX$Target, pred_probsMX)
+
+
+auc_valueMX <- auc(roc_objMX)
+print(auc_valueMX)
+
+plot(roc_objMX, col = "#1c61b6", lwd = 3, main = "ROC Curve for MX Logistic Regression Model")
+abline(a = 0, b = 1, lty = 2, col = "gray")  # diagonal line for reference
+
+
+auc_valueMX <- auc(roc_objMX)
+legend("bottomright", legend = paste("AUC =", round(auc_valueMX, 3)), col = "#1c61b6", lwd = 3)
+```
+
+
+
