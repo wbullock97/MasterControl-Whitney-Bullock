@@ -1,7 +1,7 @@
 ---
 title: "Mx Conversion Improvement - Modeling"
-author: "Whitney Bullock" 
-date: "03/19/2026"
+author: "Whitney Bullock, Sina Odejinmi, and Jordan Sharples" 
+date: "04/10/2026"
 output: 
   html_document:
     code_folding: "none"
@@ -135,7 +135,7 @@ library(forcats)
 
 Data_model <- Data_clean %>%
   mutate(
-    acct.target.industry  = fct_lump_min(as.factor(acct.target.industry), min = 50),
+    acct.target.industry  = fct_lump_min(as.factor(acct.target.industry), min = 02),
     acct.territory.rollup = fct_lump_min(as.factor(acct.territory.rollup), min = 50),
     acct.manufacturing.model = fct_lump_min(as.factor(acct.manufacturing.model), min = 50),
     acct.primary.site.function = fct_lump_min(as.factor(acct.primary.site.function), min = 50)
@@ -593,7 +593,7 @@ confusionMatrix(as.factor(pred_class), as.factor(test_data$Target))
 
 
 ```{r AUC log model data 3}
-#produces area unter the curve graphic to score model performance
+#produces area under the curve graphic to score model performance
 
 install.packages("pROC")
 library(pROC)
@@ -613,11 +613,11 @@ auc_value <- auc(roc_obj)
 legend("bottomright", legend = paste("AUC =", round(auc_value, 3)), col = "#1c61b6", lwd = 3)
 ```
 
-### Log Model Summary 
+### Log Model Overall Summary 
 
 The logistic regression model was used as the baseline model to predict lead conversion because it is highly interpretable and produces probabilities between 0 and 1. The model showed solid performance with 79% accuracy and an AUC of 0.822, indicating good ability to distinguish between converting and non-converting leads. Results show that medium and small tier accounts, management-level contacts, and high-intent actions such as “Contact Us,” “Live Demo,” and “Website Pricing” significantly increase the likelihood of conversion. In contrast, leads from Non-Life Science industries and several marketing channels such as email, events, and external demand generation showed lower conversion likelihood. Overall, the logistic model helped identify which variables influence conversion, providing interpretable insights that will guide further analysis with Random Forest to capture complex patterns and rank feature importance.
 
-### Random Forest Model 
+### Random Forest Overall Model 
 
 We decided to implement a Random Forest Model to our analysis to try to discover non-linear relationships in the data.  We have chosen to build 500 trees to learn from and aggregate our predictions to try to improve prediction accuracy.  Does industry and location truly have impacts on each other for conversion? Lastly, we are trying to determine which features are most important to model on.  Is there one feature over another that will have a stronger influence on conversion?  
 
@@ -689,82 +689,6 @@ varImpPlot(rf_model)
 A Random Forest classification model was built using 500 trees and included predictors: industry, account tier, territory, lead title, campaign channel, and priority. The model achieved an accuracy of 83.1% with an AUC of 0.778, indicating good but slightly lower predictive performance than our logistic regression model. Again, the results showed the model to be effective at identifying non-converting leads but still struggled with identifying converting leads due to class imbalance.  Feature importance analysis highlighted which variables contribute most to prediction, helping uncover nonlinear relationships and interaction effects in the data.
 
 
-## Ideal Customer Profile Conversion 
-
-```{r ICP conversion MX }
-
-#creating data set filtered on ideal customer profile identified 
-ICP_data <- Mx_data %>%
-  filter(
-    acct.target.industry %in% c("Blood & Biologics", "Medical Device"),
-    acct.tier.rollup %in% c("Small", "Medium"),
-    acct.territory.rollup %in% c("Americas", "EMEA", "Japan"),
-    contact.lead.title %in% c("Management", "Engineering")
-  )
-
-#reporting on conversion rates for ICP and Mx 
-round(mean(ICP_data$Target), 2)
-round(mean(Mx_data$Target), 2)
-```
-
-
-## Analysis Q and A 
-### Level 1 Account Analysis Questions 
-
-Q. Which types of accounts are best prospects for Mx? 
-
-  A. Industries in Medical Devices and Blood & Biologics are more likely to convert to Mx.  
-
-Q. Which manufacturing models are more likely to convert? 
-
-  A. Based on our analysis consumer packaged goods, original equipment manufacturing, and CMO showed good volume as well as higher conversion rates.  In-house manufacturing has really high volume but standard conversion rates to existing value of 12.7%.  
-  
-Q. What site functions are likely to convert? 
-
-  A. We did not explore this in enough detail. Feature engineering of site function will need to take place to showcase conversions in meaningful groups.   
-  
-### Level 2 Title Analysis 
-
-Q. Which job titles convert best with account types? 
-
-  A. We explored this at great length and repeatedly Management and Engineering prove to be the decision makes for our potential customers when exploring Master Control as a solution for their need.  These are the groups of people the Master Control Sales team should be engaging with.  
-  
-### Level 3 Cross-Sell Opportunties 
-Q. Which accounts and titles are good for BOTH Qx and Mx products? 
-
-  A. Based on our analysis for a great opportunity for cross selling would be a customer in the Blood & Biologics space as well as Medical Devices. Because of their heavy regulated nature both their quality management system as well as their manufacturing processes would benefit from the controlled, well documented solutions that Qx and Mx provide.  In these spaces it would be very benefical to the customer to have both required processes maintained in the same software that is able to speak to each other and draw results from.  
-  
-## Conclusion  
-
-Through our analysis re-occuring themes appeared and were supported by the modeling. MasterControl's ideal customer profile are small to medium size companies that are in the Blood & Biologics and Medical Devices industries. Strongest conversion results for Mx appeared in EMEA and America Blood & Biologics, as well Japan Medical Devices.   Key decision makers that MasterControl should get their sales team in front of are Management and Engineering from perspective customers.   
-
-We are confident that focusing on small and medium-sized blood and biologics companies in the Americas and EMEA, along with small and medium-sized medical device companies in Japan, will increase the MX conversion rate to 19%. This targeted mix of company size, industry, and region has demonstrated higher conversion performance compared to the current average of 12.7%.  This represents a 49% relative lift in conversion rate.  
-
-Reaching a 19% conversion rate for the Mx solution would align closely with the current performance of the Qx established product line, which has consistently delivered strong results over its 20+ year history.
-
-## Group Member Contribution 
-
-
-## Appendix 
-
-Acct manufacturing model conversion rate for Mx 
-
-Insight: Original Equipment Manufacturing and CMO account manufacturing models have good conversion rates as well as high volume.  
-
-```{r MX conversion manf. model}
-
-#filtering Mx data on manufacturing model with conversion rates 
-Data3 %>%
-  filter(solution_rollup == "Mx") %>%  
-  group_by(acct.manufacturing.model, solution_rollup) %>%
-  summarise(
-    ConversionRate = round(mean(Target), 2),
-    Count = n(),
-    .groups = "drop"  
-  ) %>%
-  arrange(acct.manufacturing.model, desc(ConversionRate))
-```
-
 ### Log for MX only 
 ```{r Log Model MX only }
 #model preparation 
@@ -778,9 +702,9 @@ test_dataMX  <- Data_clean_Mx_modeling[-train_indexMX, ]
 
 log_modelMX <- glm(Target ~ acct.target.industry +
                    acct.territory.rollup +
+                     acct.primary.site.function + 
                    acct.tier.rollup +
                    contact.lead.title +
-                     last.tactic.campaign.channel + 
                    acct.manufacturing.model + 
                    Priority,
                  data = train_dataMX,
@@ -795,8 +719,9 @@ tidy(log_modelMX) %>%
 print(log_modelMX)
 
 # this would show the complete output for the log model 
-#summary(log_model)
+#summary(log_modelMX)
 ```
+
 ```{r Log pred MX only}
 #pulls in log model, provides a pred value if >.5 will identify it as converting.
 pred_probsMX <- predict(log_modelMX, test_dataMX, type = "response")
@@ -826,6 +751,75 @@ abline(a = 0, b = 1, lty = 2, col = "gray")  # diagonal line for reference
 
 auc_valueMX <- auc(roc_objMX)
 legend("bottomright", legend = paste("AUC =", round(auc_valueMX, 3)), col = "#1c61b6", lwd = 3)
+```
+
+
+## Ideal Customer Profile Conversion 
+
+```{r ICP conversion MX }
+
+#creating data set filtered on ideal customer profile identified 
+ICP_data <- Mx_data %>%
+  filter(
+    acct.target.industry %in% c("Blood & Biologics", "Medical Device"),
+    acct.tier.rollup %in% c("Small", "Medium"),
+    acct.territory.rollup %in% c("Americas", "EMEA", "Japan"),
+    #contact.lead.title %in% c("Management", "Engineering")
+  )
+
+#reporting on conversion rates for ICP and Mx 
+round(mean(ICP_data$Target), 2)
+round(mean(Mx_data$Target), 2)
+
+```
+
+```{r}
+ICP_data %>% count(Target)
+```
+
+```{r}
+ICP_data2 <- Data3 %>%
+  filter(
+    acct.target.industry %in% c("Blood & Biologics", "Medical Device"),
+    acct.tier.rollup %in% c("Small", "Medium"),
+    acct.territory.rollup %in% c("Americas", "EMEA", "Japan"),
+    #contact.lead.title %in% c("Management", "Engineering")
+  )
+
+#reporting on conversion rates for ICP and Mx 
+round(mean(ICP_data2$Target), 2)
+round(mean(Mx_data$Target), 2)
+
+ICP_data2 %>% count(Target)
+```
+
+
+## Conclusion  
+
+Through our analysis re-occuring themes appeared and were supported by the modeling. MasterControl's ideal customer profile are small to medium size companies that are in the Blood & Biologics and Medical Devices industries. Strongest conversion results for Mx appeared in EMEA and America Blood & Biologics, as well Japan Medical Devices.   Key decision makers that MasterControl should get their sales team in front of are Management and Engineering from perspective customers.  I would not filter on these titles,  rather first identify the if they are an ideal customer profile and then reach out to their management and sales through whomever contacted MasterControl.   
+
+We are confident that focusing on small and medium-sized blood and biologics companies in the Americas and EMEA, along with small and medium-sized medical device companies in Japan, will increase the MX conversion rate to 19%. This targeted mix of company size, industry, and region has demonstrated higher conversion performance compared to the current average of 12.7%.  This represents a 49% relative lift in conversion rate.  
+
+Reaching a 19% conversion rate for the Mx solution would align closely with the current performance of the Qx established product line, which has consistently delivered strong results over its 20+ year history.
+
+## Appendix 
+
+Acct manufacturing model conversion rate for Mx 
+
+Insight: Original Equipment Manufacturing and CMO account manufacturing models have good conversion rates as well as high volume.  Even with lower conversion rates, it would be good to look at high volumes to achieve increased sales, unless there is high cost of reaching out for non-converting leads.  
+
+```{r MX conversion manf. model}
+
+#filtering Mx data on manufacturing model with conversion rates 
+Data3 %>%
+  filter(solution_rollup == "Mx") %>%  
+  group_by(acct.manufacturing.model, solution_rollup) %>%
+  summarise(
+    ConversionRate = round(mean(Target), 2),
+    Count = n(),
+    .groups = "drop"  
+  ) %>%
+  arrange(acct.manufacturing.model, desc(ConversionRate))
 ```
 
 
