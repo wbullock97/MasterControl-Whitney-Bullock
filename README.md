@@ -1,5 +1,4 @@
-# MasterControl Capstone Project 
-# MX Conversion Optimization
+# MasterControl Capstone Project: MX Conversion Optimization
 
 **Whitney Bullock**
 
