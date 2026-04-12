@@ -14,7 +14,7 @@ The objective of this project was to leverage machine learning to improve conver
 
 MasterControl provides quality and manufacturing management software to life sciences organizations, including pharmaceutical, biotechnology, and medical device companies.
 
-While the established Quality Excellence (Qx) product line achieves a strong conversion rate of **19.7%**, the newer Mx product line lags behind at **12.7%**.
+While the established Quality Excellence (Qx) product line achieves a strong conversion rate of **19%**, the newer Mx product line lags behind at **12.7%**.
 
 This gap highlights a key issue:
 
@@ -26,7 +26,7 @@ Without this insight, sales and marketing efforts are inefficient—targeting lo
 
 ## Solution Approach
 
-To address this problem, I developed predictive models to identify an **Ideal Customer Profile (ICP)** for the Mx product line.
+To address this problem, I developed predictive models to identify an **Ideal Customer Profile (ICP)** for the Mx product line. Secondly, identified key contacts for a **Targeted Outreach** approach to MasterControl's potential customers.  
 
 Key steps included:
 
@@ -36,7 +36,7 @@ Key steps included:
 * Building and comparing three machine learning models
 * Evaluating model performance to determine the best solution
 
-As a group we also developed a ranked list of all leads predicted to convert the highest regardless of filtered industries, company sizes and locations.  
+In addition to my logistic regression and random forest models the team was able to developed a ranked list of all leads predicted to convert the highest regardless of filtered values.  
 
 ---
 
