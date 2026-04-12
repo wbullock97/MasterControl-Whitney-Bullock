@@ -36,6 +36,8 @@ Key steps included:
 * Building and comparing three machine learning models
 * Evaluating model performance to determine the best solution
 
+As a group we also developed a ranked list of all leads predicted to convert the highest regardless of filtered industries, company sizes and locations.  
+
 ---
 
 ## Business Value
@@ -70,6 +72,8 @@ In this project, I:
 * Engineered contact title features from complex and inconsistent fields
 * Built and evaluated multiple machine learning models
 * Interpreted results and translated them into actionable business insights
+* Established the template for our presentation
+* Maintained team alignment, fostering collaboration 
 
 ---
 
@@ -116,15 +120,6 @@ Based on model insights, I recommend targeting:
 * Increase Mx conversion rate from **12.7% → ~19%**
 * Represents a **49% relative lift**
 * Aligns Mx performance with the successful Qx product line
-
----
-
-## Key Takeaways
-
-* Real-world data is messy—data cleaning is critical and time-intensive
-* Strong EDA drives better feature selection and model performance
-* Feature engineering can unlock high-value insights from weak data
-* Model development is iterative and requires experimentation
 
 ---
 
