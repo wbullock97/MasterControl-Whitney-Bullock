@@ -134,4 +134,4 @@ Based on model insights, I recommend targeting:
 
 This project demonstrates my ability to connect data science techniques with real business outcomes. By combining analytical rigor with business context, I developed a solution that can directly improve revenue performance and strategic decision-making for MasterControl. 
 
-## Whitney Bullock GITHUB portfolio    https://wbullock97.github.io/Whitney_Bullock_Portfolio/
+# [Whitney Bullock GITHUB portfolio](https://wbullock97.github.io/Whitney_Bullock_Portfolio/)
