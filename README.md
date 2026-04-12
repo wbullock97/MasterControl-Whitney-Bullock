@@ -42,19 +42,19 @@ Key steps included:
 
 My solution delivers value in four key areas:
 
-* ** Identify Ideal Customer Profile**
+* **Identify Ideal Customer Profile**
 
   * Industry, company size, region, and manufacturing model
 
-* ** Target the Right Decision-Makers**
+* **Target the Right Decision-Makers**
 
   * Identify high-converting contact titles
 
-* ** Improve Conversion Rates**
+* **Improve Conversion Rates**
 
   * Data-driven targeting to increase Mx performance
 
-* ** Increase Operational Efficiency**
+* **Increase Operational Efficiency**
 
   * Focus resources on high-probability leads
 
