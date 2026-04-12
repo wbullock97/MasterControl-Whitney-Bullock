@@ -1,58 +1,140 @@
+# MasterControl Capstone Project – MX Conversion Optimization
+
+**Whitney Bullock**
+
+## Project Overview
+
+This repository highlights my individual work from a capstone project focused on solving a real-world business problem for MasterControl.
+
+The objective of this project was to leverage machine learning to improve conversion rates for the Manufacturing Excellence (Mx) product line. The project walks through the full data science workflow, including business understanding, exploratory data analysis (EDA), feature engineering, model development, and evaluation.
+
 ---
 
-# MasterControl Capstone 
+## Business Problem
 
-## Whitney Bullock
+MasterControl provides quality and manufacturing management software to life sciences organizations, including pharmaceutical, biotechnology, and medical device companies.
 
-This repository contains highlights from my MasterControl capstone project.  This project focused on leveraging machine learning models to solve the real-world business problem for MasterControl.  The project will showcase the complete workflow from understanding the business problem, to completing exploratory data analysis, building of three different predictive models, and evaluating results.  The project demonstrates business value to MasterControl, by identifying their ideal customer profile that will result in an increase in conversion rates for the MX product line.   
+While the established Quality Excellence (Qx) product line achieves a strong conversion rate of **19.7%**, the newer Mx product line lags behind at **12.7%**.
+
+This gap highlights a key issue:
+
+> MasterControl lacks a clear understanding of which customer segments are most likely to convert for Mx.
+
+Without this insight, sales and marketing efforts are inefficient—targeting low-probability leads and limiting revenue growth.
 
 ---
-## Highlights 
-- Business Problem
 
-- Solution to Business Problem
-  
-- Personal Contribution
+## Solution Approach
 
-- Business Value of Solution
+To address this problem, I developed predictive models to identify an **Ideal Customer Profile (ICP)** for the Mx product line.
 
-- Difficulties During Project
+Key steps included:
 
-- Key Takeaways 
+* Data cleaning and preprocessing of messy, real-world CRM data
+* Feature engineering (especially for contact titles)
+* Exploratory data analysis to identify meaningful patterns
+* Building and comparing three machine learning models
+* Evaluating model performance to determine the best solution
 
+---
 
-## Business Problem 
+## Business Value
 
-MasterControl provides quality and manufacturing management software to life sciences organizations, including pharmaceutical, biotechnology, and medical device  manufacturers. While the company’s Quality Solutions (Qx) product line has achieved a strong conversion rate of 19.7%, the newer Manufacturing Solutions (Mx) product line has realized a significantly lower conversion rate of 12.7%. This gap indicates that Mx is underperforming relative to both internal benchmarks and business expectations. As MasterControl seeks to expand into new markets with Mx, the company faces a critical  challenge: it lacks a clear understanding of which customer segments are most likely to convert for this newer solution. Without precise insight into high-potential customer profiles, sales and marketing resources are misallocated toward prospects with a low likelihood of conversion, limiting MasterControl's revenue growth and slowing the market adoption of Mx.
+My solution delivers value in four key areas:
 
+* ** Identify Ideal Customer Profile**
 
-## Solution to Business Problem 
+  * Industry, company size, region, and manufacturing model
 
-By developing an ideal customer profile to better target potential customers MasterControl can improve their MX product line conversions.  
+* ** Target the Right Decision-Makers**
 
+  * Identify high-converting contact titles
 
-## Business Value of Solution 
-There are four objectives in my solution to add value to the business: 
+* ** Improve Conversion Rates**
 
-- Identify Ideal Customer Profile in Industry, Territory, and Manufacturing Model  
+  * Data-driven targeting to increase Mx performance
 
-- Identify Ideal Contact Title to engage with 
+* ** Increase Operational Efficiency**
 
-- Improve overall Mx Conversion Rates 
+  * Focus resources on high-probability leads
 
-- Enhance operational efficiency 
+By enabling more precise targeting, this approach helps MasterControl allocate sales and marketing resources more effectively and scale adoption of the Mx product.
 
-By accurately identifying an MX Ideal Customer Profile, MasterControl can make more informed decisions.  This will enable MasterControl to responsibly reachout to their key market for the MX product line. My solution supports thoughtful customer identification and engaging sales strategy.   A bi-product of my model is the ability to streamline MasterControls leads for a targeted approach.  Overall my models empower MasterControl to engage at the right level with the right people to improve MX conversion rates.  
+---
 
-## Difficulties During Project 
-The main difficulty during the project was featuring engineering the contact lead title variable.   This field was an open text field which identified 6589 different values as well as being left blank 30% of the time.  This is a valuable field to understand points of contact for MasterControl.  Through feature engineering I was able to clean up the data and derive meaningful insights from it.     
+##  Personal Contribution
 
-## Key Takeaways 
-This project provided valuable experience to work with real-world data.  It allowed the opportunity to gain key learnings from true data that is messy, missing values, imbalanced, and imperfect.  Working on real world data highlighted the need for data cleaning and the time spent upfront in the process to clean the data and understand the variables will pay dividends later on.  Spending time during EDA will help identify which features are important and which features just add noise.  By selecting the right features I am able to improve the models learning ability and more accurately predict conversion. The final takeaway I have from the project is appreciating the iterative process of experimenting with different models and tuning parameters to determine the best-performing solution for the dataset to develop a good model.  
+In this project, I:
 
-## Project Conclusion 
-Through my analysis re-occuring themes appeared and were supported by the modeling. MasterControl's ideal customer profile are small to medium size companies that are in the Blood & Biologics and Medical Devices industries. Strongest conversion results for Mx appeared in EMEA and America Blood & Biologics, as well Japan Medical Devices.   Key decision makers that MasterControl should get their sales team in front of are Management and Engineering from perspective customers.   
+* Performed in-depth EDA to uncover key trends and relationships
+* Engineered contact title features from complex and inconsistent fields
+* Built and evaluated multiple machine learning models
+* Interpreted results and translated them into actionable business insights
 
-I am confident that focusing on small and medium-sized blood and biologics companies in the Americas and EMEA, along with small and medium-sized medical device companies in Japan, will increase the MX conversion rate to 19%. This targeted mix of company size, industry, and region has demonstrated higher conversion performance compared to the current average of 12.7%.  This represents a 49% relative lift in conversion rate.  
+---
 
-Reaching a 19% conversion rate for the Mx solution would align closely with the current performance of the Qx established product line, which has consistently delivered strong results over its 20+ year history.
+## Challenges
+
+One of the most significant challenges was working with the **contact title field**, which:
+
+* Contained over **6,500 unique values**
+* Had **30% missing data**
+* Included inconsistent and unstructured text
+
+Through feature engineering and grouping strategies, I transformed this noisy variable into meaningful categories that improved model performance and interpretability.
+
+---
+
+## Key Insights
+
+* High-performing segments include:
+
+  * **Small to medium-sized companies**
+  * **Blood & Biologics and Medical Device industries**
+
+* Strong regional performance:
+
+  * **Americas & EMEA → Blood & Biologics**
+  * **Japan → Medical Devices**
+
+* Key decision-makers:
+
+  * **Management and Engineering roles**
+
+---
+
+## Results & Impact
+
+Based on model insights, I recommend targeting:
+
+* Small–medium companies
+* Specific industries and regions with higher conversion rates
+* Decision-makers in management and engineering
+
+ **Projected Impact:**
+
+* Increase Mx conversion rate from **12.7% → ~19%**
+* Represents a **49% relative lift**
+* Aligns Mx performance with the successful Qx product line
+
+---
+
+## Key Takeaways
+
+* Real-world data is messy—data cleaning is critical and time-intensive
+* Strong EDA drives better feature selection and model performance
+* Feature engineering can unlock high-value insights from weak data
+* Model development is iterative and requires experimentation
+
+---
+
+## Repository Contents
+
+* Individual notebooks documenting my analysis and modeling
+* End-to-end workflow from data exploration to final recommendations
+
+---
+
+## Final Thoughts
+
+This project demonstrates my ability to connect data science techniques with real business outcomes. By combining analytical rigor with business context, I developed a solution that can directly improve revenue performance and strategic decision-making for MasterControl. 
