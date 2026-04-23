@@ -20,7 +20,7 @@ This gap highlights a key issue:
 
 > MasterControl lacks a clear understanding of which customer segments are most likely to convert for Mx.
 
-Without this insight, sales and marketing efforts are inefficient—targeting low-probability leads and limiting revenue growth.
+Without this insight, sales and marketing efforts are inefficient and target low probability leads which is limiting MasterControls revenue growth.  
 
 ---
 
@@ -36,7 +36,7 @@ Key steps included:
 * Building and comparing three machine learning models
 * Evaluating model performance to determine the best solution
 
-In addition to my logistic regression and random forest models the team was able to developed a ranked list of all leads predicted to convert the highest regardless of filtered values.  
+In addition to my logistic regression and random forest models the team was able to developed a ranked list of all leads predicted to convert the highest regardless of filtered values. Jordan Sharples, also used his experience with LDA analyses to go in-depth on the contact lead variable.  He was able to uncover which group of words in the title variable converted best with specific industries.  This tailored targeted outreach approach has high potential for MasterControl.   
 
 ---
 
@@ -117,7 +117,7 @@ Based on model insights, I recommend targeting:
 
  **Projected Impact:**
 
-* Increase Mx conversion rate from **12.7% → ~19%**
+* Increase Mx conversion rate from **12.7% → ~19%** while still maintaining a strong lead volume outreach.  
 * Represents a **49% relative lift**
 * Aligns Mx performance with the successful Qx product line
 
@@ -139,6 +139,7 @@ This project demonstrates my ability to connect data science techniques with rea
 ### [Mx Conversion Project HTML](https://907c8be48db249af9df00037420f9798.app.posit.cloud/file_show?path=%2Fcloud%2Fproject%2FModelingforMasterControl.html)
 ---
 
-### [Whitney Bullock Github Portfolio](https://wbullock97.github.io/Whitney_Bullock_Portfolio/)
 I invite you to take a minute to explore other projects of mine in my Github portfolio.  
+### [Whitney Bullock Github Portfolio](https://wbullock97.github.io/Whitney_Bullock_Portfolio/)
+
 
