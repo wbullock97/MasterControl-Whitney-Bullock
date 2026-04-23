@@ -139,7 +139,8 @@ This project demonstrates my ability to connect data science techniques with rea
 ---
 
 
-### + I invite you to take a minute to explore other projects of mine in my Github portfolio.  
+### $${\color{red}Welcome \space \color{lightblue}To \space \color{lightgreen}Github}$$
+I invite you to take a minute to explore other projects of mine in my Github portfolio.  
  ## [Whitney Bullock Github Portfolio](https://wbullock97.github.io/Whitney_Bullock_Portfolio/)
 
 
