@@ -138,6 +138,7 @@ This project demonstrates my ability to connect data science techniques with rea
 ### [Mx Conversion Project HTML](https://907c8be48db249af9df00037420f9798.app.posit.cloud/file_show?path=%2Fcloud%2Fproject%2FModelingforMasterControl.html)
 ---
 
+---
 
 ## $${\color{darkgreen}I \space invite \space you \space  to \space take \space a \space minute \space to \space explore \space other \space projects \space of \space mine \space in \space my \space Github \space portfolio.}$$  
  ## [Whitney Bullock Github Portfolio](https://wbullock97.github.io/Whitney_Bullock_Portfolio/)
