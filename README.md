@@ -6,7 +6,7 @@
 
 This repository highlights my individual work from a capstone project focused on solving a real-world business problem for MasterControl.
 
-The objective of this project was to leverage machine learning to improve conversion rates for the Manufacturing Excellence (Mx) product line. The project walks through the full data science workflow, including business understanding, exploratory data analysis (EDA), feature engineering, model development, and evaluation.
+The objective of this project was to leverage machine learning to improve conversion rates for the Manufacturing Excellence (Mx) product line. My project includes business understanding, exploratory data analysis (EDA), feature engineering, model development, and evaluation.
 
 ---
 
